@@ -13,7 +13,7 @@ library(gridExtra)
 library(broom)
 
 ###### T I D Y I N G  D A T A ######
-#---LOAD FILES-----
+#------LOAD FILES---------
 CCodesfile="Country-Code.xlsx"
 Zomatofile="zomato.xlsx"
 CurrencyFile="CurrencyRates.xlsx"
@@ -211,8 +211,58 @@ leaflet(data=America,) %>% addTiles() %>% addCircleMarkers(lng=America$Longitude
 
 #Check India
 India=map.data %>% filter(Country=="India")
-leaflet(India) %>% addTiles() %>% addCircleMarkers(lng=India$Longitude,lat=India$Latitude,radius = 2,opacity=0.5) %>% setView(78.9629,20,zoom=4)
+indiamap = leaflet(India) %>% addTiles() %>%
+  addMarkers(clusterOptions = markerClusterOptions()) %>%
+  setView(78.9629,20,zoom=4)
+indiamap
+
 #seems to be lot's of restaurants all over India - figures we have 8600+ restaurants (86% of the data is from India)
+#can we view restaurants based on:
+##Price
+##Rating
+
+#Set up ranges for Price & Ratings
+#levels can be: 0-10, 10-20, 20-30, 40-50, 50+
+lowbudget = india.data %>% filter(Avg_Cost_USD<15)
+avgbudget = india.data %>% filter(Avg_Cost_USD>=15 & Avg_Cost_USD<30)
+highbudget = india.data %>% filter(Avg_Cost_USD>=30 & Avg_Cost_USD<45)
+expensive = india.data %>% filter(Avg_Cost_USD>=45)
+
+#plot restaurants with below $10
+leaflet(lowbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
+#seems spread BUT 6000+ of the restaurants are in New Dehli
+leaflet(avgbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
+#700 in New Dehli
+leaflet(highbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
+#only New Dehli
+leaflet(expensive) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
+#expensive restaurants seem to be in New Dehli only
+
+#notice through the maps that majority of the data is actually coming from New Dehli
+#let's investigate
+leaflet(india.data) %>% addTiles() %>% addCircles(opacity=0.5) %>% setView(77.2090,28.6139,zoom=11)
+leaflet(india.data) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions()) %>% setView(77.2090,28.6139,zoom=11)
+#most restaurants seem to be near airport
+leaflet(lowbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions()) %>% setView(77.2090,28.6139,zoom=11)
+
+#what about the best rated restaurants?
+best = india.data %>% filter(Rating_Text == 'Excellent')
+leaflet(best) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
+#aside from new delhi we see Bengaluru has the second highest number of best restaurants
+#How does Bengaluru compare in price to New Dehli?
+leaflet(lowbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions()) %>% setView(77.5946,12.9716,zoom=4)
+leaflet(best) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions()) %>% setView(77.5946,12.9716,zoom=4)
+#108 cheap with 32 best 
+
+leaflet(lowbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions()) %>% setView(77.2090,28.6139,zoom=4)
+leaflet(best) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions()) %>% setView(77.2090,28.6139,zoom=4)
+#6873 cheap with 54 best
+
+#is Bengaluru your best bang for your buck?
+
+#more options -> go to north -> food for all budgets
+#strict budget -> go to south -> more high quality restaurants for low cost
+
 
 ## ---------- INTERVENTION: Maybe we should focus on just India b/c 86% of the data is pertaning to it-----
 #lets make a new datafile
@@ -331,6 +381,26 @@ multireg2i.outliers #good
 plot(multireg2i,1) #good
 plot(multireg2i,2)
 plot(multireg2i,3)
+
+
+#--------- PREDICTING WHAT RATING RESTAURANT YOU WILL ATTEND -------
+budget = data.frame(Avg_Cost_USD=15)
+lograting = predict(costreg2i,budget)
+lograting
+rating = (5*(10^lograting))/(1+(10^lograting))
+rating
+
+
+
+#----------INDIA VS THE WORLD-----------
+#so how does india compare to the rest of the world?
+#limitations: 86% of data is for india and only 24% is for the rest
+#set new data frame
+world.data = zomato6 %>% filter(Country != 'India')
+#wow only 899 values vs 8652
+
+
+
 
 #--- IGNORE-----
 #library("ggmap")
