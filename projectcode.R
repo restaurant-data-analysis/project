@@ -287,7 +287,7 @@ summary(multireg.i) #went up from 58.9% to 59.3% - not much help in multiregress
 ##multiple regression (2) - Does delivery have any affect on multireg
 multireg.2i = lm(Aggregate_Rating~Avg_Cost_USD+Has_Online_Delivery+Principal_Cuisines+Locality,data=india.data,weights = Votes)
 summary(multireg.2i) #went from 58.9 to 58.92 - practically nothing
-
+ggplot ()
 #stick to our cccreg.i - cuisine + cost + locality
 multireg.i=cccreg.i
 multiregi.plot = ggplot(data=multireg.i,aes(y=.resid,x=.fitted))+geom_point()+geom_smooth(se=F)
