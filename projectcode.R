@@ -445,7 +445,7 @@ summary(countries.aov)
 TukeyHSD(countries.aov)
 
 
-### IDENTIFYING WHATS INDIAN FOOD
+#--------- IDENTIFYING WHATS INDIAN FOOD---------
 
 cuisineinfo = zomato4 %>% count(Cuisines)
 zomatoc = zomato4 %>% mutate(ind.cuisine = ifelse(grepl('India',Cuisines),'Yes', 'No'))
@@ -468,3 +468,20 @@ india.data3 %>% select(Principal_Cuisines,Cuisines)
 india.data4 = india.data3 %>% mutate(ind.cuisine = ifelse(grepl('India',Cuisines),'Yes', 'No'))
 india.data4 %>% count(ind.cuisine)
 #wait a minute, why are we getting 46,375 values (4x the data we had) somethings up
+
+#over matched by restaurant bc overlaps, find a diff distinct variable
+cuisine.list = zomato4 %>% select(Restaurant_Name,City,Cuisines)
+india.data3 = india.data %>% left_join(cuisine.list)
+india.data3 %>% select(Principal_Cuisines,Cuisines)
+#still overlapped
+
+india.data = india.data %>% mutate(ID = 1:n()) %>% select(ID,everything())
+zomato.id = zomato4 %>% mutate(ID = 1:n()) %>% select(ID,everything())
+cuisine.list = zomato.id %>% select(ID,Cuisines)
+india.data3 = india.data %>% left_join(cuisine.list)
+india.data3 %>% select(Principal_Cuisines,Cuisines)
+#finally worked
+
+india.data4 = india.data3 %>% mutate(`Indian Food Served?` = ifelse(grepl('India',Cuisines),'Yes', 'No'))
+india.data4 %>% count(ind.cuisine)
+#looks good to me
