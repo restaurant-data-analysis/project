@@ -3,6 +3,7 @@
 # install.packages("readxl")
 # install.packages("leaflet")
 # install.packages("rworldmap")
+install.packages("flexdashboard", type = "source")
 
 #------LOAD DATA------------
 library(tidyverse)
@@ -221,6 +222,45 @@ indiamap
 ##Price
 ##Rating
 
+#TRYING A NEW APPROACH FOR MAPS
+
+#remove NA long + lat:
+india = india.data[complete.cases(india.data[,c("Longitude", "Latitude")]),]
+
+#color coordinate by budget
+india$costcol <- ifelse(india$Avg_Cost_USD < 15, "orange",
+                        ifelse(india$Avg_Cost_USD >= 15 & india$Avg_Cost_USD<30, "green",
+                               ifelse(india$Avg_Cost_USD >= 30 & india$Avg_Cost_USD<50, "red", "black")))
+
+india$costf <- factor(india$Avg_Cost_USD,
+                      levels=c(3:0),
+                      labels=c("Expensive",
+                               "High Budget",
+                               "Average Budget",
+                               "Low Budget"))
+#map of restaurants by price
+leaflet() %>% 
+  addTiles() %>% 
+  setView(78.9629,20,zoom=4) %>% 
+  addCircleMarkers(india$Longitude, 
+                   india$Latitude, 
+                   color = india$costcol, 
+                   radius = 1, 
+                   fill = T,
+                   fillOpacity = 0.2,
+                   opacity = 0.6,
+                   popup = paste(india$City,
+                                 india$Restaurant_Name, 
+                                 sep = "")) %>%
+  addLegend("bottomleft", 
+            colors = c("orange","green", "red", "black"),
+            labels = c("Low Budget",
+                       "Average Budget",
+                       "High Budget",
+                       "Expensive"), 
+            opacity = 0.8)
+
+
 #Set up ranges for Price & Ratings
 #levels can be: 0-10, 10-20, 20-30, 40-50, 50+
 lowbudget = india.data %>% filter(Avg_Cost_USD<15)
@@ -228,16 +268,103 @@ avgbudget = india.data %>% filter(Avg_Cost_USD>=15 & Avg_Cost_USD<30)
 highbudget = india.data %>% filter(Avg_Cost_USD>=30 & Avg_Cost_USD<45)
 expensive = india.data %>% filter(Avg_Cost_USD>=45)
 
+
 #plot restaurants with below $10
 leaflet(lowbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
 #seems spread BUT 6000+ of the restaurants are in New Dehli
+
+#LOW BUDGET
+#remove NA long + lat:
+lowbudget.1 = lowbudget[complete.cases(lowbudget[,c("Longitude", "Latitude")]),]
+
+#color coordinate by budget
+lowbudget.1$costcol <- ifelse(lowbudget.1$Aggregate_Rating < 2.5, "red",
+                              ifelse(lowbudget.1$Aggregate_Rating >= 2.5 & lowbudget.1$Aggregate_Rating<3.5, "orange",
+                                     ifelse(lowbudget.1$Aggregate_Rating >= 3.5 & lowbudget.1$Aggregate_Rating<4.5, "green", "black")))
+
+leaflet() %>% 
+  addTiles() %>% 
+  setView(78.9629,20,zoom=4.5) %>% 
+  addCircleMarkers(lowbudget.1$Longitude, 
+                   lowbudget.1$Latitude, 
+                   color = lowbudget.1$costcol, 
+                   radius = 1, 
+                   fill = T,
+                   fillOpacity = 0.2,
+                   opacity = 0.6,
+                   popup = paste(lowbudget.1$Restaurant_Name, 
+                                 sep = "")) %>%
+  addLegend("bottomleft", 
+            colors = c("red","orange", "green", "black"),
+            labels = c("Poor Rating",
+                       "Average Rating",
+                       "Good Rating",
+                       "Excellent Rating"), 
+            opacity = 0.8)
+
+#AVG BUDGET
+avgbudget.1 = avgbudget[complete.cases(avgbudget[,c("Longitude", "Latitude")]),]
+
+#color coordinate by budget
+avgbudget.1$costcol <- ifelse(avgbudget.1$Aggregate_Rating < 2.5, "red",
+                              ifelse(avgbudget.1$Aggregate_Rating >= 2.5 & avgbudget.1$Aggregate_Rating<3.5, "orange",
+                                     ifelse(avgbudget.1$Aggregate_Rating >= 3.5 & avgbudget.1$Aggregate_Rating<4.5, "green", "black")))
+
+leaflet() %>% 
+  addTiles() %>% 
+  setView(78.9629,20,zoom=4.5) %>% 
+  addCircleMarkers(avgbudget.1$Longitude, 
+                   avgbudget.1$Latitude, 
+                   color = avgbudget.1$costcol, 
+                   radius = 1, 
+                   fill = T,
+                   fillOpacity = 0.2,
+                   opacity = 0.6,
+                   popup = paste(avgbudget.1$Restaurant_Name, 
+                                 sep = "")) %>%
+  addLegend("bottomleft", 
+            colors = c("red","orange", "green", "black"),
+            labels = c("Poor Rating",
+                       "Average Rating",
+                       "Good Rating",
+                       "Excellent Rating"), 
+            opacity = 0.8)
+
 leaflet(avgbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
 #700 in New Dehli
+
 leaflet(highbudget) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
 #only New Dehli
+
+
 leaflet(expensive) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOptions())
 #expensive restaurants seem to be in New Dehli only
+expensive.1 = expensive[complete.cases(expensive[,c("Longitude", "Latitude")]),]
 
+#color coordinate by budget
+expensive.1$costcol <- ifelse(expensive.1$Aggregate_Rating < 2.5, "red",
+                              ifelse(expensive.1$Aggregate_Rating >= 2.5 & expensive.1$Aggregate_Rating<3.5, "orange",
+                                     ifelse(expensive.1$Aggregate_Rating >= 3.5 & expensive.1$Aggregate_Rating<4.5, "green", "black")))
+
+leaflet() %>% 
+  addTiles() %>% 
+  setView(77.2090,28.6139,zoom=11) %>% 
+  addCircleMarkers(expensive.1$Longitude, 
+                   expensive.1$Latitude, 
+                   color = lowbudget.1$costcol, 
+                   radius = 5, 
+                   fill = T,
+                   fillOpacity = 0.2,
+                   opacity = 0.6,
+                   popup = paste(expensive.1$Restaurant_Name, 
+                                 sep = "")) %>%
+  addLegend("bottomleft", 
+            colors = c("red","orange", "green", "black"),
+            labels = c("Poor Rating",
+                       "Average Rating",
+                       "Good Rating",
+                       "Excellent Rating"), 
+            opacity = 0.8)
 #notice through the maps that majority of the data is actually coming from New Dehli
 #let's investigate
 leaflet(india.data) %>% addTiles() %>% addCircles(opacity=0.5) %>% setView(77.2090,28.6139,zoom=11)
@@ -262,6 +389,8 @@ leaflet(best) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOption
 
 #more options -> go to north -> food for all budgets
 #strict budget -> go to south -> more high quality restaurants for low cost
+
+
 
 
 ## ---------- INTERVENTION: Maybe we should focus on just India b/c 86% of the data is pertaning to it-----
@@ -418,11 +547,14 @@ rating
 
 #----------INDIA VS THE WORLD-----------
 #so how does india compare to the rest of the world?
+#more specifically how 
 #limitations: 86% of data is for india and only 24% is for the rest
 #set new data frame
 world.data = zomato6 %>% filter(Country != 'India')
 #wow only 899 values vs 8652
-
+worldaov = aov(Aggregate_Rating~Country,world.data)
+summary(worldaov)
+TukeyHSD((worldaov))
 
 #--- IGNORE-----
 #library("ggmap")
@@ -498,5 +630,4 @@ ggplot(indiacuisine.reg,aes(sample=.resid))+stat_qq(alpha=0.2)+
   stat_qq_line()+facet_wrap(~`Indian Food Served?`)
 #not very normal distribution
 #conclusion - insignificant effect
-
 
