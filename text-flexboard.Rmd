@@ -1,0 +1,32 @@
+---
+title: "Restaurant Data Analysis"
+author: "Mona & Owishee"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: journal
+    social: menu
+    source_code: embeded
+    orientation: columns
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+library(flexdashboard)
+library(tidyverse)
+library(leaflet)
+library(readxl)
+library(rworldmap)
+library(gridExtra)
+library(broom)
+```
+
+Column
+-----------------------------------------------------------------------
+
+### World Map Overview
+
+```{r}
+newmap = getMap(resolution = "li")
+plot(newmap)
+```
+

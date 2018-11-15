@@ -54,8 +54,9 @@ zomato5[zomato5 == "Not rated"] = NA #remove unrated values
 #let's check how pricing & ratings compare using side by side boxplots
 zomato5 = zomato5 %>% mutate(Rating_Factor=ordered(Rating_Text,levels=c("Excellent","Very Good","Good","Average","Poor")))
 
-ratingt.cost= ggplot(zomato5,aes(x=Rating_Factor,y=Avg_Cost_USD))+geom_boxplot() #general rating category
-ratingt.cost
+ratingt.cost= ggplot(zomato5 %>% filter(Avg_Cost_USD<100),aes(x=Rating_Factor,y=Avg_Cost_USD))+geom_boxplot() #general rating category
+ratingt.cost 
+grid.arrange(ratingt.cost, rc1)
 rating.cost= ggplot(zomato5,aes(x=factor(Aggregate_Rating),y=Avg_Cost_USD))+geom_boxplot() #more in-depth view on ratings (treating rating as factor)
 rating.cost
 rating.costplot= ggplot(zomato5,aes(x=(Aggregate_Rating),y=Avg_Cost_USD))+geom_point()
@@ -390,8 +391,18 @@ leaflet(best) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOption
 #more options -> go to north -> food for all budgets
 #strict budget -> go to south -> more high quality restaurants for low cost
 
-
-
+#pie chart to visualize Countries
+pie <- ggplot(zomato7, aes(x = "", fill = factor(Country))) + 
+  geom_bar(width = 1) +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  labs(fill="Country", 
+       x=NULL, 
+       y=NULL, 
+       title="Pie Chart of Countries", 
+       caption="Distribution of Countries")
+pie + coord_polar(theta = "y", start=0)
+#visually see how terrifying this limitation is
 
 ## ---------- INTERVENTION: Maybe we should focus on just India b/c 86% of the data is pertaning to it-----
 #lets make a new datafile
@@ -401,6 +412,18 @@ head(india.data)
 #make data into a binary file (India vs Rest of the World)
 zomato7 = zomato6 %>% mutate(IndiaYN = ifelse(Country =='India','Yes','No'))
 
+#pie chart to visualize the distribution of Countries
+pie <- ggplot(zomato7, aes(x = "", fill = factor(Country))) + 
+  geom_bar(width = 1) +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  labs(fill="Country", 
+       x=NULL, 
+       y=NULL, 
+       title="Pie Chart of Countries", 
+       caption="Distribution of Countries")
+pie + coord_polar(theta = "y", start=0)
+#visualize how terrifying this limitation is
 
 ## ------------ GRAPHS (INDIA DATA ONLY)-------------
 #RATING VS COST
@@ -415,17 +438,44 @@ ggplot(india.data,aes(x=Rating_Factor,y=Avg_Cost_USD))+geom_boxplot() #looks mor
 ggplot(zomato7,aes(x=Rating_Factor,y=Avg_Cost_USD,colour=IndiaYN))+
   geom_boxplot() 
 
-ggplot(zomato7 %>% filter(Avg_Cost_USD<100),aes(x=Rating_Factor,y=Avg_Cost_USD,colour=IndiaYN))+
+rc1=ggplot(zomato7 %>% filter(Avg_Cost_USD<100),aes(x=Rating_Factor,y=Avg_Cost_USD,colour=IndiaYN))+
   geom_boxplot() #cost 0-100 for a closer look
 #indians tend to spend less on food compared to rest of the world 
 
 #RATING VS PRINCIPAL CUISINE
 ggplot(india.data,aes(x=Rating_Factor,fill=Principal_Cuisines))+geom_bar()
 
-india.data2 = india.data %>% mutate(IndianFoodYN = ifelse(Principal_Cuisines ==c('North','Agra'),'Yes','No'))
-ggplot(india.data2,aes(x=Rating_Factor,fill=IndianFoodYN))+geom_bar(position="dodge")
+# india.data2 = india.data %>% mutate(IndianFoodYN = ifelse(Principal_Cuisines ==c('North','Agra'),'Yes','No'))
+ggplot(india.data4,aes(x=Rating_Factor,fill=Indian_Food_Served))+geom_bar(position="dodge")
+#we see here that indian cuisine in india is not necessarily more favourable 
 
-zo#(hi owishee teehee)
+#ANIMATED GRAPH
+#I wanted to test how the scatterplot with cost and aggregate rating is affected as the 
+#number of votes increase for rest. in India
+install.packages("cowplot")  # a gganimate dependency
+library(cowplot)
+library(devtools)
+library(RCurl)
+library(httr)
+set_config( config( ssl_verifypeer = 0L ) )
+devtools::install_github("RcppCore/Rcpp")
+devtools::install_github("dgrtwo/gganimate") #cant seem to get this to work
+
+library(gganimate)
+library(gapminder)
+
+# theme_set(theme_bw())  # pre-set the bw theme.
+
+# g <- ggplot(india.data4, aes(Avg_Cost_USD, Aggregate_Rating, size = pop, frame = Votes)) +
+#   geom_point() +
+#   geom_smooth(aes(group = Votes), 
+#               method = "lm", 
+#               show.legend = FALSE) +
+#   facet_wrap(~continent, scales = "free") +
+#   scale_x_log10()  # convert to log scale
+# 
+# gganimate(g, interval=0.2)
+
 
 #----------- REGRESSION ONLY ON INDIA -------
 costreg.i = lm(Aggregate_Rating~Avg_Cost_USD,data=india.data,weights = Votes)
@@ -537,13 +587,17 @@ india.row = lm(zomato7,)
 
 
 #--------- PREDICTING WHAT RATING RESTAURANT YOU WILL ATTEND -------
-budget = data.frame(Avg_Cost_USD=15)
+budget = data.frame(Avg_Cost_USD=1)
 lograting = predict(costreg2i,budget)
 lograting
 rating = (5*(10^lograting))/(1+(10^lograting))
 rating
 
-
+newdata = data.frame(Avg_Cost_USD=10, Principal_Cuisines="North", Locality="Tajganj")
+lgrating = predict(multireg2i,newdata)
+lgrating
+rating = (5*(10^lgrating))/(1+(10^lgrating))
+rating
 
 #----------INDIA VS THE WORLD-----------
 #so how does india compare to the rest of the world?
@@ -571,11 +625,13 @@ TukeyHSD((worldaov))
 
 
 ## ANOVA TABLE - Can we compare india to RoW?
-countries.aov = aov(Aggregate_Rating~Country,data=zomato6)
-summary(countries.aov)
+world.aov = aov(Aggregate_Rating~Country,data=world.data)
+summary(world.aov)
 #reject null that means rating is equal
-TukeyHSD(countries.aov)
-
+world.t = TukeyHSD(world.aov)
+class(world.t$Country)
+as.data.frame(world.t$Country) %>% rownames_to_column(var="countries") %>% 
+  filter(`p adj` <= 0.05)
 
 #--------- IDENTIFYING WHATS INDIAN FOOD---------
 
@@ -612,9 +668,9 @@ zomato.id = zomato4 %>% mutate(ID = 1:n()) %>% select(ID,everything())
 cuisine.list = zomato.id %>% select(ID,Cuisines)
 india.data3 = india.data %>% left_join(cuisine.list)
 india.data3 %>% select(Principal_Cuisines,Cuisines)
-#finally worked
+#finally worked -- did not match up
 
-india.data4 = india.data3 %>% mutate(`Indian Food Served?` = ifelse(grepl('India',Cuisines),'Yes', 'No'))
+india.data4 = india.data3 %>% mutate(`Indian_Food_Served` = ifelse(grepl('India',Cuisines),'Yes', 'No'))
 #looks good to me
 
 

@@ -1,0 +1,82 @@
+---
+title: "Untitled"
+author: "Mona Mujib and Owishee Islam"
+date: "11/15/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#LOAD LIBRARIES
+library(flexdashboard)
+library(tidyverse)
+library(readxl)
+library(rworldmap)
+library(leaflet)
+library(gridExtra)
+library(broom)
+
+
+#------LOAD FILES---------
+CCodesfile="Country-Code.xlsx"
+Zomatofile="zomato.xlsx"
+CurrencyFile="CurrencyRates.xlsx"
+
+CCodes=read_excel(CCodesfile) #importing country code file
+zomato=read_excel(Zomatofile) #importing main zomato file
+Currency=read_excel(CurrencyFile) #importing currency file
+
+#------ GET RID OF SOME COLUMNS & ADD NEW ONES -------------
+zomato1=zomato %>% select (-c(ID, Rating_Color,Switch_To_Order_Menu,Price_Range,Address,Locality_Verbose,Currency))
+#we remove currency column as it is incorrect and contains too many unique symbols
+
+#add in new columns: Country Names according to Country Code & proper currency names with conversion rates
+zomato2 = zomato1 %>% left_join(CCodes) 
+zomato3 = zomato2 %>% left_join(Currency) 
+
+zomato3 %>% select(Currency, Country) #checking to see if country matched up with new currency values
+
+#add in new column: USD Cost (for equal comparison)
+zomato4 = zomato3 %>% mutate(Avg_Cost_USD = Average_Cost_For_Two*`Conversion Rate (USD)`) 
+#Multiplied Currency Column by it's conversion rate
+
+#replacing Cuisines col. with Principal_Cuisines (the first category of cuisines for every country row)
+zomato5= zomato4 %>% separate(Cuisines,into=c("Principal_Cuisines")) #store "primary" cuisine types into new column and replace old with this
+
+#we notice that there are several "0" rated stores for even expensive places so we decided to remove no rating stores
+
+zomato5[zomato5 == 0] = NA #remove values that have zero
+zomato5[zomato5 == "Not rated"] = NA #remove unrated values
+
+zomato6 = zomato5 %>% mutate(Transformed_Rating = log10(Aggregate_Rating/(5-Aggregate_Rating)))
+
+map.data = zomato6 %>% select(Country,Restaurant_Name,Longitude,Latitude)
+zomato5 = zomato5 %>% mutate(Rating_Factor=ordered(Rating_Text,levels=c("Excellent","Very Good","Good","Average","Poor")))
+
+India=map.data %>% filter(Country=="India")
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars, echo=TRUE}
+newmap = getMap(resolution = "li")
+plot(newmap)
+points(map.data$Longitude, map.data$Latitude, col = "red", cex = .6)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r leaflet, echo=TRUE}
+`{r}
+India %>% leaflet() %>% addTiles() %>%
+  addMarkers(clusterOptions = markerClusterOptions()) %>%
+  setView(78.9629,20,zoom=4)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
