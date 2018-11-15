@@ -269,6 +269,9 @@ leaflet(best) %>% addTiles() %>% addMarkers(clusterOptions = markerClusterOption
 india.data = zomato6 %>% filter(Country == 'India')
 head(india.data)
 
+#make data into a binary file (India vs Rest of the World)
+zomato7 = zomato6 %>% mutate(IndiaYN = ifelse(Country =='India','Yes','No'))
+
 
 ## ------------ GRAPHS (INDIA DATA ONLY)-------------
 #RATING VS COST
@@ -279,11 +282,21 @@ ggplot(india.data,aes(x=Rating_Factor,y=Avg_Cost_USD))+geom_boxplot() #looks mor
 #instead of excellent >> there is a cuttoff price for consumers in india, when exceeded
 #it takes away from their utility
 
-ggplot(zomato6,aes(x=Rating_Factor,y=Avg_Cost_USD,colour=Country))+
-  geom_boxplot()
+#grouped boxplot on india vs the other countries
+ggplot(zomato7,aes(x=Rating_Factor,y=Avg_Cost_USD,colour=IndiaYN))+
+  geom_boxplot() 
 
+ggplot(zomato7 %>% filter(Avg_Cost_USD<100),aes(x=Rating_Factor,y=Avg_Cost_USD,colour=IndiaYN))+
+  geom_boxplot() #cost 0-100 for a closer look
+#indians tend to spend less on food compared to rest of the world 
 
-#(hi owishee teehee)
+#RATING VS PRINCIPAL CUISINE
+ggplot(india.data,aes(x=Rating_Factor,fill=Principal_Cuisines))+geom_bar()
+
+india.data2 = india.data %>% mutate(IndianFoodYN = ifelse(Principal_Cuisines ==c('North','Agra'),'Yes','No'))
+ggplot(india.data2,aes(x=Rating_Factor,fill=IndianFoodYN))+geom_bar(position="dodge")
+
+zo#(hi owishee teehee)
 
 #----------- REGRESSION ONLY ON INDIA -------
 costreg.i = lm(Aggregate_Rating~Avg_Cost_USD,data=india.data,weights = Votes)
@@ -390,6 +403,9 @@ plot(multireg2i,1) #good
 plot(multireg2i,2)
 plot(multireg2i,3)
 
+#how does india fair to the rest of the world?
+india.row = lm(zomato7,)
+
 
 #--------- PREDICTING WHAT RATING RESTAURANT YOU WILL ATTEND -------
 budget = data.frame(Avg_Cost_USD=15)
@@ -420,3 +436,10 @@ world.data = zomato6 %>% filter(Country != 'India')
 # 
 # api = "AIzaSyB40bPMJbzkyBTdvOx60nA1LWyafO660QU"
 # get_map(location = "India",zoom="auto")
+
+
+## ANOVA TABLE - Can we compare india to RoW?
+countries.aov = aov(Aggregate_Rating~Country,data=zomato6)
+summary(countries.aov)
+#reject null that means rating is equal
+TukeyHSD(countries.aov)
