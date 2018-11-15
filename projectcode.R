@@ -1,8 +1,8 @@
-# #------INSTALL PACKAGES--------------
-# install.packages("tidyverse")
-# install.packages("readxl")
-# install.packages("leaflet")
-# install.packages("rworldmap")
+##------INSTALL PACKAGES--------------
+install.packages("tidyverse")
+install.packages("readxl")
+install.packages("leaflet")
+install.packages("rworldmap")
 
 #------LOAD DATA------------
 library(tidyverse)
@@ -443,3 +443,28 @@ countries.aov = aov(Aggregate_Rating~Country,data=zomato6)
 summary(countries.aov)
 #reject null that means rating is equal
 TukeyHSD(countries.aov)
+
+
+### IDENTIFYING WHATS INDIAN FOOD
+
+cuisineinfo = zomato4 %>% count(Cuisines)
+zomatoc = zomato4 %>% mutate(ind.cuisine = ifelse(grepl('India',Cuisines),'Yes', 'No'))
+zomatoc %>% count(ind.cuisine)
+#didn't do anything bc principal cuisines over simplified
+
+#can try to bring back old column containing the list of cuisines
+# but we want this ONLY for india and its an old data set
+india.data3 = india.data  %>% left_join(zomato4)
+india.data3 %>% select(Principal_Cuisines,Cuisines)                               
+#missing some cuisines (?) showing as NA 
+
+#try something else:
+cuisine.list = zomato4 %>% select(Restaurant_Name,Cuisines)
+india.data3 = india.data %>% left_join(cuisine.list)
+india.data3 %>% select(Principal_Cuisines,Cuisines)
+##worked
+
+#test it now:
+india.data4 = india.data3 %>% mutate(ind.cuisine = ifelse(grepl('India',Cuisines),'Yes', 'No'))
+india.data4 %>% count(ind.cuisine)
+#wait a minute, why are we getting 46,375 values (4x the data we had) somethings up
