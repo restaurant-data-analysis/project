@@ -271,10 +271,18 @@ head(india.data)
 
 
 ## ------------ GRAPHS (INDIA DATA ONLY)-------------
+#RATING VS COST
+ggplot(india.data,aes(x=Avg_Cost_USD,y=Rating_Factor))+geom_boxplot()
+#interesting how this boxplot looks, I will try switching the variables below
+ggplot(india.data,aes(x=Rating_Factor,y=Avg_Cost_USD))+geom_boxplot() #looks more like a boxlot 
+#does tend to follow a trend but turns out but notice how higher prices got very good
+#instead of excellent >> there is a cuttoff price for consumers in india, when exceeded
+#it takes away from their utility
 
-# ADD 
-# CODE
-# HERE
+ggplot(zomato6,aes(x=Rating_Factor,y=Avg_Cost_USD,colour=Country))+
+  geom_boxplot()
+
+
 #(hi owishee teehee)
 
 #----------- REGRESSION ONLY ON INDIA -------
@@ -398,8 +406,6 @@ rating
 #set new data frame
 world.data = zomato6 %>% filter(Country != 'India')
 #wow only 899 values vs 8652
-
-
 
 
 #--- IGNORE-----
