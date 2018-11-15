@@ -1,8 +1,8 @@
-##------INSTALL PACKAGES--------------
-install.packages("tidyverse")
-install.packages("readxl")
-install.packages("leaflet")
-install.packages("rworldmap")
+# ##------INSTALL PACKAGES--------------
+# install.packages("tidyverse")
+# install.packages("readxl")
+# install.packages("leaflet")
+# install.packages("rworldmap")
 
 #------LOAD DATA------------
 library(tidyverse)
@@ -483,5 +483,20 @@ india.data3 %>% select(Principal_Cuisines,Cuisines)
 #finally worked
 
 india.data4 = india.data3 %>% mutate(`Indian Food Served?` = ifelse(grepl('India',Cuisines),'Yes', 'No'))
-india.data4 %>% count(ind.cuisine)
 #looks good to me
+
+
+#regression on this
+indiacuisine.reg = lm(Transformed_Rating~`Indian Food Served?`,india.data4,weights = Votes)
+summary(indiacuisine.reg) #small p value but very low R square
+#indian food actually decreases rating slightly 
+ggplot(indiacuisine.reg,aes(x=.fitted,y = .resid))+geom_point()+geom_smooth(se=F)
+#binary
+plot(indiacuisine.reg,1)
+plot(indiacuisine.reg,2) #not bad minus top and bottom outliers
+ggplot(indiacuisine.reg,aes(sample=.resid))+stat_qq(alpha=0.2)+
+  stat_qq_line()+facet_wrap(~`Indian Food Served?`)
+#not very normal distribution
+#conclusion - insignificant effect
+
+
