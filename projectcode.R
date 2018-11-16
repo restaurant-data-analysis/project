@@ -3,8 +3,8 @@
 # install.packages("readxl")
 # install.packages("leaflet")
 # install.packages("rworldmap")
-install.packages("flexdashboard", type = "source")
-
+# install.packages("flexdashboard", type = "source")
+# install.packages("ploty")
 #------LOAD DATA------------
 library(tidyverse)
 library(leaflet)
@@ -12,6 +12,7 @@ library(readxl)
 library(rworldmap)
 library(gridExtra)
 library(broom)
+library(plotly)
 
 ###### T I D Y I N G  D A T A ######
 #------LOAD FILES---------
@@ -24,7 +25,7 @@ zomato=read_excel(Zomatofile) #importing main zomato file
 Currency=read_excel(CurrencyFile) #importing currency file
 
 #------ GET RID OF SOME COLUMNS & ADD NEW ONES -------------
-zomato1=zomato %>% select (-c(ID, Rating_Color,Switch_To_Order_Menu,Price_Range,Address,Locality_Verbose,Currency))
+zomato1=zomato %>% select (-c(Rating_Color,Switch_To_Order_Menu,Price_Range,Address,Locality_Verbose,Currency))
 #we remove currency column as it is incorrect and contains too many unique symbols
 
 #add in new columns: Country Names according to Country Code & proper currency names with conversion rates
@@ -442,10 +443,10 @@ rc1=ggplot(zomato7 %>% filter(Avg_Cost_USD<100),aes(x=Rating_Factor,y=Avg_Cost_U
   geom_boxplot() #cost 0-100 for a closer look
 #indians tend to spend less on food compared to rest of the world 
 
+
 #RATING VS PRINCIPAL CUISINE
 ggplot(india.data,aes(x=Rating_Factor,fill=Principal_Cuisines))+geom_bar()
 
-# india.data2 = india.data %>% mutate(IndianFoodYN = ifelse(Principal_Cuisines ==c('North','Agra'),'Yes','No'))
 ggplot(india.data4,aes(x=Rating_Factor,fill=Indian_Food_Served))+geom_bar(position="dodge")
 #we see here that indian cuisine in india is not necessarily more favourable 
 
@@ -476,6 +477,8 @@ library(gapminder)
 # 
 # gganimate(g, interval=0.2)
 
+
+ggplot(india.data %>% filter(Avg_Cost_USD<50),aes(y=Aggregate_Rating,x=Avg_Cost_USD))+geom_point()+stat_smooth(method="loess")
 
 #----------- REGRESSION ONLY ON INDIA -------
 costreg.i = lm(Aggregate_Rating~Avg_Cost_USD,data=india.data,weights = Votes)
@@ -633,47 +636,6 @@ class(world.t$Country)
 as.data.frame(world.t$Country) %>% rownames_to_column(var="countries") %>% 
   filter(`p adj` <= 0.05)
 
-#--------- IDENTIFYING WHATS INDIAN FOOD---------
-
-cuisineinfo = zomato4 %>% count(Cuisines)
-zomatoc = zomato4 %>% mutate(ind.cuisine = ifelse(grepl('India',Cuisines),'Yes', 'No'))
-zomatoc %>% count(ind.cuisine)
-#didn't do anything bc principal cuisines over simplified
-
-#can try to bring back old column containing the list of cuisines
-# but we want this ONLY for india and its an old data set
-india.data3 = india.data  %>% left_join(zomato4)
-india.data3 %>% select(Principal_Cuisines,Cuisines)                               
-#missing some cuisines (?) showing as NA 
-
-#try something else:
-cuisine.list = zomato4 %>% select(Restaurant_Name,Cuisines)
-india.data3 = india.data %>% left_join(cuisine.list)
-india.data3 %>% select(Principal_Cuisines,Cuisines)
-##worked
-
-#test it now:
-india.data4 = india.data3 %>% mutate(ind.cuisine = ifelse(grepl('India',Cuisines),'Yes', 'No'))
-india.data4 %>% count(ind.cuisine)
-#wait a minute, why are we getting 46,375 values (4x the data we had) somethings up
-
-#over matched by restaurant bc overlaps, find a diff distinct variable
-cuisine.list = zomato4 %>% select(Restaurant_Name,City,Cuisines)
-india.data3 = india.data %>% left_join(cuisine.list)
-india.data3 %>% select(Principal_Cuisines,Cuisines)
-#still overlapped
-
-india.data = india.data %>% mutate(ID = 1:n()) %>% select(ID,everything())
-zomato.id = zomato4 %>% mutate(ID = 1:n()) %>% select(ID,everything())
-cuisine.list = zomato.id %>% select(ID,Cuisines)
-india.data3 = india.data %>% left_join(cuisine.list)
-india.data3 %>% select(Principal_Cuisines,Cuisines)
-#finally worked -- did not match up
-
-india.data4 = india.data3 %>% mutate(`Indian_Food_Served` = ifelse(grepl('India',Cuisines),'Yes', 'No'))
-#looks good to me
-
-
 #regression on this
 indiacuisine.reg = lm(Transformed_Rating~`Indian Food Served?`,india.data4,weights = Votes)
 summary(indiacuisine.reg) #small p value but very low R square
@@ -686,4 +648,25 @@ ggplot(indiacuisine.reg,aes(sample=.resid))+stat_qq(alpha=0.2)+
   stat_qq_line()+facet_wrap(~`Indian Food Served?`)
 #not very normal distribution
 #conclusion - insignificant effect
+
+
+#--------- IDENTIFYING WHATS INDIAN FOOD---------
+
+#SOLUTION ONE: AUTO + EFFICIENT BUT LESS ACCURATE -> DEPENDING ON DATA RECORD
+#ADDING CUISINES LIST BACK IN -> IF/ELSE -> NEW COL ADDED TO india.data4
+cuisine.list = zomato4 %>% select(ID,Cuisines)
+india.data3 = india.data %>% left_join(cuisine.list)
+india.data3 %>% select(Principal_Cuisines,Cuisines)
+##worked
+#test it now:
+india.data4 = india.data3 %>% mutate(`Indian Food Served?` = ifelse(grepl('India',Cuisines),'Yes', 'No'))
+View(india.data4 %>% select(Principal_Cuisines,Cuisines,`Indian Food Served?`))
+#worked
+
+#SOLUTION TWO: MANUAL + TIME CONSUMING BUT MORE ACCURATE -> EXTERNAL RESEARCH DONE TO IDENTIFY CUISINES
+#CREATING A VECTOR CONTAINING THE INDIAN CUISINES -> IF/ELSE -> NEW COL ADDED TO india.data2
+c.df = c("Andhra","Assamese","Bengali","Malwani","Naga","North","South")
+india.data2$YN = ifelse(india.data$Principal_Cuisines %in% c.df, "INDIAN","OTHER")
+View(india.data %>% select(Principal_Cuisines,YN))
+#worked
 
